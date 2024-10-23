@@ -4,7 +4,7 @@ require("@nomicfoundation/hardhat-verify");
 async function main() {
     const fundMeFactory = await ethers.getContractFactory("FundMe")
     console.log(`contract deploying`) 
-    const fundMe = await fundMeFactory.deploy(10)
+    const fundMe = await fundMeFactory.deploy(500)
     await fundMe.waitForDeployment()
     console.log(`contract has been deployed successfully, contract address is ${fundMe.target}`) 
     
@@ -15,6 +15,23 @@ async function main() {
     } else {
         console.log("Verification skipped")
     }
+
+    const [firstAccount, secondAccount] = await ethers.getSigners()
+
+    const fundTx = await fundMe.fund({value: ethers.parseEther("0.000001")})
+    await fundTx.wait()
+    const balanceOfContract = await ethers.provider.getBalance(fundMe.target)
+    console.log(`Balance of the contract is ${balanceOfContract}`)
+
+    const fundTxWithSecondAccount = await fundMe.connect(secondAccount).fund({valve: ethers.parseEther("0.000001")})
+    await fundTxWithSecondAccount.wait()
+    const balanceOfContractAfterSecondFund = await ethers.provider.getBalance(fundMe.target)
+    console.log(`Balance of the sec contract is ${balanceOfContractAfterSecondFund}`)
+
+    const firstAccountBalanceInFundMe = await fundMe.fundersToAmount(firstAccount.address)
+    const secondAccountBalanceInFundMe = await fundMe.fundersToAmount(secondAccount.address)
+    console.log(`Balance of the first account is ${firstAccount.address} is ${firstAccountBalanceInFundMe}`)
+    console.log(`Balance of the second account is ${secondAccount.address} is ${secondAccountBalanceInFundMe}`)
 }
 
 async function verifyFundMe(fundmeAddr, args) {
